@@ -1,30 +1,31 @@
-name: NodeJS with Gulp
+trigger:
+-master
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+pool:
+vmImage: 'ubuntu-latest'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+steps:
 
-    strategy:
-      matrix:
-        node-version: [12.x]
-    
-    steps:
-    - uses: actions/checkout@v2
+- task: NodeTool@0
+  inputs:
+    versionSpec: '12.x'
+  displayName: 'Install Node.js'
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
+- script: |
+    gulp clean
+    gulp bundle --ship
+    gulp package-solution --ship
+    dir
+  displaName: 'Build and package solution'
 
-    - name: Build
-      run: |
-        npm install
-        gulp clean
-        gulp bundle --ship
-        gulp package-solution --ship
+- task: CopyFiles@2
+  inputs:
+    SourceFOlder: '$(Build.SourcesDirectory)/sharepoint/solution'
+    Contest: 'spfx-insert-code.sppkg'
+    TarjetFolder: '$(Build.ArtifactsStagingDirectory)/drop'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactsStagingDirectory)/drop'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
